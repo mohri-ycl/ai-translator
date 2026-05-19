@@ -139,37 +139,6 @@
     .text-input:focus { border-color: #6a9e72; background: white; }
     .text-input::placeholder { color: #bbb; }
 
-    .mic-btn {
-      width: 52px; height: 52px;
-      border-radius: 50%;
-      border: none;
-      background: #e8f2e9;
-      color: #4a7c59;
-      font-size: 21px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
-      flex-shrink: 0;
-      box-shadow: 0 1px 5px rgba(74,124,89,0.15);
-    }
-    .mic-btn.recording {
-      background: #4a7c59;
-      color: white;
-      animation: mic-pulse 1s infinite;
-    }
-
-    @keyframes mic-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(74,124,89,0.5); }
-      50%       { box-shadow: 0 0 0 10px rgba(74,124,89,0); }
-    }
-
-    .voice-hint {
-      font-size: 12px; color: #4a7c59;
-      text-align: center; padding: 6px 0 2px;
-      display: none;
-    }
-    .voice-hint.show { display: block; }
-
     .generate-btn {
       width: 100%;
       background: linear-gradient(135deg, #87ae8a, #4a7c59);
@@ -435,27 +404,6 @@
       color: #4a7c59;
       box-shadow: 0 1px 8px rgba(0,0,0,0.13);
     }
-
-    /* ── Voice Lang Toggle ── */
-    .voice-lang-row {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 6px;
-      font-size: 12px; color: #888;
-    }
-    .voice-lang-row.show { display: flex; }
-    .vlang-btn {
-      padding: 4px 10px;
-      border-radius: 7px;
-      border: 1.5px solid #e0e0e0;
-      background: #fafafa;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
-      color: #666;
-    }
-    .vlang-btn.active { background: #e8f2e9; border-color: #4a7c59; color: #4a7c59; font-weight: 700; }
 
     /* ── Vocab Checkbox Row ── */
     .anki-vocab-row {
@@ -788,21 +736,13 @@
   <!-- Input Card -->
   <div class="input-card">
     <div class="input-label" id="input-label-text">📝 輸入想翻譯的中文文字或詞語</div>
-    <!-- Voice lang selector (only shown in reverse mode) -->
-    <div class="voice-lang-row" id="voice-lang-row">
-      <span>語音輸入語言：</span>
-      <button class="vlang-btn active" data-vlang="ja" onclick="setVoiceLang('ja')">🇯🇵 日文</button>
-      <button class="vlang-btn" data-vlang="en" onclick="setVoiceLang('en')">🇺🇸 英文</button>
-    </div>
     <div class="input-row">
       <textarea class="text-input" id="text-input"
                 placeholder="例：今天天氣真好、你最近過得怎樣、謝謝你一直支持我…"
                 rows="2"
                 oninput="autoResize(this)"
                 onkeydown="handleKeydown(event)"></textarea>
-      <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="語音輸入（中文）">🎤</button>
     </div>
-    <div class="voice-hint" id="voice-hint">🔴 錄音中，說完後請再按一次麥克風</div>
     <button class="generate-btn" id="generate-btn" onclick="handleGenerate()">
       ✨ 生成翻譯 + 例句
     </button>
@@ -830,10 +770,7 @@ let apiKey = localStorage.getItem('oai_key') || '';
 let sentenceData = {};   // { id: { japanese, english, chinese } }
 let audioCache   = {};   // { cacheKey: { url, blob } }
 let currentAudio = null;
-let isRecording  = false;
-let recognition  = null;
 let currentMode  = 'zh2jpen';   // 'zh2jpen' or 'jpen2zh'
-let voiceLang    = 'ja';        // for reverse mode mic lang
 
 // Restore saved key
 if (apiKey) {
@@ -852,30 +789,20 @@ function switchMode(mode) {
   const label    = document.getElementById('input-label-text');
   const textarea = document.getElementById('text-input');
   const genBtn   = document.getElementById('generate-btn');
-  const vlRow    = document.getElementById('voice-lang-row');
 
   if (mode === 'zh2jpen') {
-    label.textContent  = '📝 輸入想翻譯的中文文字或詞語';
+    label.textContent    = '📝 輸入想翻譯的中文文字或詞語';
     textarea.placeholder = '例：今天天氣真好、你最近過得怎樣、謝謝你一直支持我…';
-    genBtn.innerHTML   = '✨ 生成翻譯 + 例句';
-    vlRow.classList.remove('show');
+    genBtn.innerHTML     = '✨ 生成翻譯 + 例句';
   } else {
-    label.textContent  = '📝 輸入日文或英文句子';
+    label.textContent    = '📝 輸入日文或英文句子';
     textarea.placeholder = '例：お疲れ様でした　/　I\'m totally exhausted…';
-    genBtn.innerHTML   = '🔍 翻譯成中文';
-    vlRow.classList.add('show');
+    genBtn.innerHTML     = '🔍 翻譯成中文';
   }
 
   document.getElementById('results').innerHTML = '';
   textarea.value = '';
   autoResize(textarea);
-}
-
-function setVoiceLang(lang) {
-  voiceLang = lang;
-  document.querySelectorAll('.vlang-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.vlang === lang);
-  });
 }
 
 function handleGenerate() {
@@ -906,57 +833,6 @@ function autoResize(el) {
 
 function handleKeydown(e) {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
-}
-
-// ─────────────────────────────────────────
-//  Voice Input (Web Speech API)
-// ─────────────────────────────────────────
-function toggleVoice() {
-  const hasAPI = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
-  if (!hasAPI) { showToast('此瀏覽器不支援語音輸入，請使用 Chrome 或 Safari'); return; }
-
-  if (isRecording) {
-    recognition && recognition.stop();
-    return;
-  }
-
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SR();
-  recognition.lang = currentMode === 'zh2jpen' ? 'zh-TW'
-                   : voiceLang === 'en'        ? 'en-US'
-                   :                             'ja-JP';
-  recognition.continuous = false;
-  recognition.interimResults = true;
-
-  recognition.onstart = () => {
-    isRecording = true;
-    document.getElementById('mic-btn').classList.add('recording');
-    document.getElementById('voice-hint').classList.add('show');
-  };
-
-  recognition.onresult = (e) => {
-    let t = '';
-    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-    const el = document.getElementById('text-input');
-    el.value = t;
-    autoResize(el);
-  };
-
-  recognition.onend = () => {
-    isRecording = false;
-    document.getElementById('mic-btn').classList.remove('recording');
-    document.getElementById('voice-hint').classList.remove('show');
-  };
-
-  recognition.onerror = (e) => {
-    isRecording = false;
-    document.getElementById('mic-btn').classList.remove('recording');
-    document.getElementById('voice-hint').classList.remove('show');
-    const msgs = { 'no-speech': '未偵測到語音', 'not-allowed': '請允許麥克風權限', 'network': '網路錯誤' };
-    showToast('語音錯誤：' + (msgs[e.error] || e.error));
-  };
-
-  recognition.start();
 }
 
 // ─────────────────────────────────────────

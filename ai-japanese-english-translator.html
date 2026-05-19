@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#4a7c59">
+  <title>🌿 AI 日英翻譯</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', 'Segoe UI', sans-serif;
+      background: #f3f8f3;
+      min-height: 100vh;
+      color: #1a1a2e;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #87ae8a 0%, #4a7c59 100%);
+      color: white;
+      padding: env(safe-area-inset-top, 12px) 16px 14px;
+      padding-top: max(env(safe-area-inset-top, 0px), 14px);
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: 0.3px; }
+    .header p  { margin: 3px 0 0; font-size: 11.5px; opacity: 0.82; }
+    .header-icon { font-size: 26px; }
+    .header-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      background: rgba(255,255,255,0.18);
+      border: none;
+      color: white;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .icon-btn:active { background: rgba(255,255,255,0.35); }
+
+    /* ── Container ── */
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 14px 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    }
+
+    /* ── Settings Panel ── */
+    .settings-panel {
+      background: white;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+      display: none;
+      animation: slideDown 0.2s ease;
+    }
+    .settings-panel.open { display: block; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .settings-panel h3 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: #888;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .form-row { margin-bottom: 12px; }
+    .form-row:last-child { margin-bottom: 0; }
+    .form-row label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; }
+    .form-row input, .form-row select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafafa;
+      color: #1a1a2e;
+    }
+    .form-row input:focus, .form-row select:focus { border-color: #6a9e72; background: white; }
+    .form-row small { display: block; margin-top: 5px; font-size: 11px; color: #aaa; }
+    .form-row small a { color: #1565c0; text-decoration: none; }
+
+    /* ── Input Card ── */
+    .input-card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
+    }
+    .input-label {
+      font-size: 11.5px;
+      color: #aaa;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .text-input {
+      flex: 1;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 16px;
+      outline: none;
+      resize: none;
+      line-height: 1.55;
+      min-height: 52px;
+      max-height: 130px;
+      font-family: inherit;
+      color: #1a1a2e;
+      background: #fafafa;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .text-input:focus { border-color: #6a9e72; background: white; }
+    .text-input::placeholder { color: #bbb; }
+
+    .mic-btn {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: none;
+      background: #e8f2e9;
+      color: #4a7c59;
+      font-size: 21px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 1px 5px rgba(74,124,89,0.15);
+    }
+    .mic-btn.recording {
+      background: #4a7c59;
+      color: white;
+      animation: mic-pulse 1s infinite;
+    }
+
+    @keyframes mic-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74,124,89,0.5); }
+      50%       { box-shadow: 0 0 0 10px rgba(74,124,89,0); }
+    }
+
+    .voice-hint {
+      font-size: 12px; color: #4a7c59;
+      text-align: center; padding: 6px 0 2px;
+      display: none;
+    }
+    .voice-hint.show { display: block; }
+
+    .generate-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #87ae8a, #4a7c59);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.3px;
+      box-shadow: 0 4px 14px rgba(74,124,89,0.35);
+    }
+    .generate-btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.9; }
+    .generate-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+
+    /* ── Loading ── */
+    .loading-box {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.08);
+    }
+    .spinner {
+      display: inline-block;
+      width: 36px; height: 36px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #6a9e72;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin-bottom: 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-box p { margin: 0; color: #999; font-size: 14px; }
+
+    /* ── Error ── */
+    .error-box {
+      background: #fff5f5;
+      border: 1.5px solid #ffcdd2;
+      border-radius: 16px;
+      padding: 16px;
+      color: #c62828;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .error-box strong { display: block; margin-bottom: 4px; }
+
+    /* ── Results ── */
+    .section-header {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 4px 8px;
+    }
+    .result-block { margin-bottom: 16px; }
+
+    .trans-card, .examples-card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.08);
+    }
+
+    /* ── Language Blocks ── */
+    .lang-block { margin-bottom: 14px; }
+    .lang-block:last-child { margin-bottom: 0; }
+
+    .lang-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10.5px; font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 7px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .lang-tag.zh { background: #f3e8ff; color: #7c3aed; }
+    .lang-tag.ja { background: #fff3f3; color: #c62828; }
+    .lang-tag.en { background: #e8f0fe; color: #1565c0; }
+
+    .sentence-text {
+      font-size: 17px;
+      line-height: 1.65;
+      color: #1a1a2e;
+      margin: 0 0 8px;
+    }
+    .sentence-text.ja { font-size: 18px; }
+    .sentence-text.small { font-size: 15px; }
+    .sentence-text.small.ja { font-size: 16px; }
+
+    /* ── Audio Buttons ── */
+    .audio-row { display: flex; gap: 7px; }
+    .audio-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
+    }
+    .audio-btn:disabled { opacity: 0.55; cursor: wait; }
+
+    .play-btn.ja { flex: 1; background: #fff3f3; color: #c62828; }
+    .play-btn.en { flex: 1; background: #e8f0fe; color: #1565c0; }
+    .play-btn.ja:active:not(:disabled) { background: #c62828; color: white; }
+    .play-btn.en:active:not(:disabled) { background: #1565c0; color: white; }
+
+    .dl-btn {
+      background: #f5f5f5;
+      color: #777;
+      border: 1.5px solid #eee;
+      padding: 8px 11px;
+      font-size: 14px;
+    }
+    .dl-btn:active:not(:disabled) { background: #e0e0e0; }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #f0f0f0, transparent);
+      margin: 14px 0;
+    }
+
+    /* ── Example Items ── */
+    .example-item { padding: 12px 0; }
+    .example-item + .example-item { border-top: 1px solid #f5f5f5; }
+
+    .example-meta {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .example-num {
+      font-size: 11px; font-weight: 800;
+      color: #ccc;
+    }
+    .example-note {
+      font-size: 11px;
+      background: #fffde7;
+      color: #f57f17;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: max(28px, env(safe-area-inset-bottom, 28px));
+      left: 50%; transform: translateX(-50%) translateY(12px);
+      background: rgba(20,20,30,0.88);
+      backdrop-filter: blur(6px);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 22px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 9999;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Google Sync ── */
+    .gsync-card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.08);
+    }
+    .gsync-row {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .gsync-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; font-weight: 600;
+      padding: 8px 13px;
+      border-radius: 10px;
+    }
+    .gsync-badge.syncing { background: #e3f2fd; color: #1565c0; }
+    .gsync-badge.ok      { background: #e8f5e9; color: #2e7d32; }
+    .gsync-badge.error   { background: #fff5f5; color: #c62828; }
+    .gsync-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12.5px; font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 9px;
+      border: 1.5px solid #e0e0e0;
+      color: #555;
+      text-decoration: none;
+      background: #fafafa;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .gsync-link:active { background: #f0f0f0; }
+
+    /* ── Google Setup in Settings ── */
+    .setup-guide {
+      background: #f8fdf8;
+      border: 1.5px solid #c8e6c9;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 10px;
+      display: none;
+      font-size: 12.5px;
+      line-height: 1.9;
+      color: #333;
+      animation: slideDown 0.2s ease;
+    }
+    .setup-guide.open { display: block; }
+    .setup-guide ol { margin: 6px 0 0; padding-left: 18px; }
+    .setup-guide li { margin-bottom: 2px; }
+    .setup-guide code {
+      background: #e8f5e9; color: #2e7d32;
+      padding: 1px 5px; border-radius: 4px; font-size: 11.5px;
+    }
+    .setup-guide a { color: #1565c0; }
+    .setup-toggle {
+      font-size: 12px; color: #1565c0;
+      background: none; border: none; cursor: pointer; padding: 4px 0;
+      text-decoration: underline;
+    }
+    .gsync-connected {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: #2e7d32;
+      margin-top: 6px;
+    }
+
+    /* ── Mode Toggle ── */
+    .mode-toggle {
+      display: flex;
+      background: #e8f2e9;
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 14px;
+      gap: 3px;
+    }
+    .mode-btn {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #999;
+      background: transparent;
+      line-height: 1.3;
+      letter-spacing: 0.2px;
+    }
+    .mode-btn.active {
+      background: white;
+      color: #4a7c59;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.13);
+    }
+
+    /* ── Voice Lang Toggle ── */
+    .voice-lang-row {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 12px; color: #888;
+    }
+    .voice-lang-row.show { display: flex; }
+    .vlang-btn {
+      padding: 4px 10px;
+      border-radius: 7px;
+      border: 1.5px solid #e0e0e0;
+      background: #fafafa;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #666;
+    }
+    .vlang-btn.active { background: #e8f2e9; border-color: #4a7c59; color: #4a7c59; font-weight: 700; }
+
+    /* ── Vocab Checkbox Row ── */
+    .anki-vocab-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 13px;
+      background: #f5fbf6;
+      border: 1.5px solid #c8e6c9;
+      border-radius: 11px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
+    .anki-vocab-row input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: #4a7c59;
+      flex-shrink: 0; margin-top: 2px; cursor: pointer;
+    }
+    .anki-vocab-row .vocab-label { font-size: 13.5px; font-weight: 700; color: #2e5e3a; }
+    .anki-vocab-row small { display: block; font-size: 11.5px; color: #888; margin-top: 2px; line-height: 1.5; }
+
+    /* ── Vocab Result Cards ── */
+    .vocab-result-card {
+      background: #f5fbf6;
+      border-left: 3px solid #4a7c59;
+      border-radius: 0 10px 10px 0;
+      padding: 10px 13px;
+      margin-bottom: 8px;
+    }
+    .vocab-word {
+      font-size: 17px; font-weight: 700; color: #2e5e3a;
+      margin-bottom: 2px;
+    }
+    .vocab-reading { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .vocab-meaning { font-size: 14px; color: #1a1a2e; margin-bottom: 6px; font-weight: 600; }
+    .vocab-example { font-size: 13px; color: #555; line-height: 1.6; }
+    .vocab-example-zh { font-size: 12px; color: #999; margin-top: 2px; }
+    .vocab-tag {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      background: #e8f2e9; color: #4a7c59;
+      padding: 2px 7px; border-radius: 5px; margin-bottom: 5px;
+      letter-spacing: 0.4px;
+    }
+
+    /* ── Reverse Result ── */
+    .rev-lang-label {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700;
+      color: #888; letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .nuance-box {
+      margin-top: 10px;
+      padding: 9px 13px;
+      background: #fffde7;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #f57f17;
+      line-height: 1.6;
+    }
+
+    /* ── Anki Export ── */
+    .anki-card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.08);
+    }
+    .anki-desc {
+      font-size: 12.5px;
+      color: #888;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .anki-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .anki-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #fafafa;
+      border: 1.5px solid #f0f0f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .anki-item:has(input:checked) {
+      border-color: #a5d6a7;
+      background: #f1f8f1;
+    }
+    .anki-item input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: #2e7d32;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .anki-item-content { flex: 1; min-width: 0; }
+    .anki-item-badge {
+      font-size: 10px; font-weight: 700;
+      background: #e8f5e9; color: #2e7d32;
+      padding: 2px 7px; border-radius: 5px;
+      display: inline-block; margin-bottom: 3px;
+      letter-spacing: 0.4px;
+    }
+    .anki-item-badge.ex { background: #e3f2fd; color: #1565c0; }
+    .anki-item-preview {
+      font-size: 13px; color: #555;
+      display: block;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .anki-deck-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .anki-deck-row label {
+      font-size: 12px; color: #888; white-space: nowrap; flex-shrink: 0;
+    }
+    .anki-deck-row input {
+      flex: 1;
+      border: 1.5px solid #e8e8e8;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 14px;
+      outline: none;
+      background: #fafafa;
+      transition: border-color 0.2s;
+    }
+    .anki-deck-row input:focus { border-color: #4a7c59; background: white; }
+
+    .anki-export-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #2e7d32, #1b5e20);
+      color: white;
+      border: none;
+      border-radius: 13px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+      transition: all 0.2s;
+      margin-bottom: 10px;
+    }
+    .anki-export-btn:active { transform: scale(0.97); opacity: 0.9; }
+    .anki-export-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+    .anki-how-toggle {
+      width: 100%;
+      background: none;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: #888;
+      cursor: pointer;
+      text-align: left;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .anki-how-toggle:active { background: #f5f5f5; }
+    .anki-how-panel {
+      margin-top: 10px;
+      background: #f8fdf8;
+      border: 1.5px solid #c8e6c9;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: none;
+      animation: slideDown 0.2s ease;
+    }
+    .anki-how-panel.open { display: block; }
+    .anki-how-panel ol {
+      margin: 0; padding-left: 18px;
+      font-size: 13px; color: #444; line-height: 2;
+    }
+    .anki-how-panel li { margin-bottom: 2px; }
+    .anki-how-panel code {
+      background: #e8f5e9; color: #2e7d32;
+      padding: 1px 5px; border-radius: 4px;
+      font-size: 12px;
+    }
+    .anki-select-all {
+      font-size: 12px; color: #1565c0;
+      background: none; border: none; cursor: pointer;
+      padding: 0; margin-bottom: 8px;
+      text-decoration: underline;
+    }
+
+    /* ── Style (Casual / Formal) ── */
+    .style-block {
+      margin-bottom: 12px;
+    }
+    .style-block:last-child { margin-bottom: 0; }
+
+    .style-header {
+      display: flex; align-items: center; gap: 7px;
+      margin-bottom: 6px;
+    }
+    .style-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10.5px; font-weight: 800;
+      padding: 3px 8px; border-radius: 6px;
+      letter-spacing: 0.4px; text-transform: uppercase;
+    }
+    .style-badge.casual { background: #fff3e0; color: #bf360c; }
+    .style-badge.formal { background: #e8eaf6; color: #283593; }
+
+    .style-sentence {
+      font-size: 17px; line-height: 1.65;
+      color: #1a1a2e; margin: 0 0 7px;
+    }
+    .style-sentence.ja { font-size: 18px; }
+    .style-sentence.small { font-size: 15px; }
+    .style-sentence.small.ja { font-size: 16px; }
+
+    .style-divider {
+      height: 1px;
+      background: #f5f5f5;
+      margin: 10px 0;
+    }
+
+    /* ── Furigana (Ruby) ── */
+    ruby { ruby-align: center; }
+    rt {
+      font-size: 0.52em;
+      color: #aaa;
+      letter-spacing: 0.04em;
+      font-weight: 400;
+    }
+
+    /* ── Responsive ── */
+    @media (min-width: 480px) {
+      .header h1 { font-size: 21px; }
+      .sentence-text { font-size: 18px; }
+      .sentence-text.ja { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <span class="header-icon">🌿</span>
+    <div style="text-align:center; flex:1">
+      <h1>AI 日英翻譯練習</h1>
+      <p>💬 口語　＋　📝 書面　同時對照學習</p>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="toggleSettings()" title="設定">⚙️</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Settings Panel -->
+  <div class="settings-panel" id="settings-panel">
+    <h3>⚙️ 設定</h3>
+    <div class="form-row">
+      <label>OpenAI API Key</label>
+      <input type="password" id="api-key-input" placeholder="sk-proj-..." autocomplete="off"
+             oninput="handleApiKeyInput(this.value)">
+      <small>取得 API Key：<a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></small>
+    </div>
+
+    <div class="form-row">
+      <label>Google Script 網址　<span style="color:#2e7d32;font-weight:600">（翻譯完自動存 Sheets + Drive）</span></label>
+      <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/..." autocomplete="off"
+             oninput="handleScriptUrlInput(this.value)">
+      <div id="gsync-settings-status" style="margin-top:6px;display:none">
+        <span class="gsync-connected">✅ 已連線
+          <a href="#" id="settings-sheet-link" target="_blank" style="color:#1565c0">📊 試算表</a>
+          <a href="#" id="settings-folder-link" target="_blank" style="color:#1565c0">📁 資料夾</a>
+        </span>
+      </div>
+      <div style="margin-top:6px">
+        <button class="setup-toggle" onclick="toggleSetupGuide()">❓ 怎麼設定 Google Script？</button>
+      </div>
+      <div class="setup-guide" id="setup-guide">
+        <strong>一次設定，之後全自動 🎉</strong>
+        <ol>
+          <li>開啟 <a href="https://script.google.com" target="_blank">script.google.com</a> → 點「新增專案」</li>
+          <li>刪除預設程式碼，將下方提供的 <code>google-apps-script.js</code> 內容全部貼上</li>
+          <li>點上方「部署」→「新增部署」→ 類型選「<code>網頁應用程式</code>」</li>
+          <li>執行身分：<code>我</code>　誰可存取：<code>所有人</code>　→ 按「部署」</li>
+          <li>複製「網頁應用程式網址」，貼到上方欄位</li>
+        </ol>
+        <small style="color:#888">完成後試算表和資料夾會自動建立在你的 Google Drive 裡</small>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>日文語音（建議 Nova，日本人發音最自然）</label>
+      <select id="voice-ja">
+        <option value="nova">Nova（女聲・自然日語發音 ⭐）</option>
+        <option value="shimmer">Shimmer（女聲，柔和）</option>
+        <option value="alloy">Alloy（中性）</option>
+        <option value="onyx">Onyx（男聲，低沉）</option>
+        <option value="echo">Echo（男聲，清晰）</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>英文語音</label>
+      <select id="voice-en">
+        <option value="echo">Echo（男聲，自然口語 ⭐）</option>
+        <option value="alloy">Alloy（中性）</option>
+        <option value="fable">Fable（英式男聲）</option>
+        <option value="nova">Nova（女聲，清晰）</option>
+        <option value="shimmer">Shimmer（女聲，柔和）</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" data-mode="zh2jpen" onclick="switchMode('zh2jpen')">
+      🇹🇼 中文<br><span style="font-size:11px;font-weight:400;opacity:0.75">→ 日文＋英文</span>
+    </button>
+    <button class="mode-btn" data-mode="jpen2zh" onclick="switchMode('jpen2zh')">
+      🇯🇵🇺🇸 日文／英文<br><span style="font-size:11px;font-weight:400;opacity:0.75">→ 中文翻譯</span>
+    </button>
+  </div>
+
+  <!-- Input Card -->
+  <div class="input-card">
+    <div class="input-label" id="input-label-text">📝 輸入想翻譯的中文文字或詞語</div>
+    <!-- Voice lang selector (only shown in reverse mode) -->
+    <div class="voice-lang-row" id="voice-lang-row">
+      <span>語音輸入語言：</span>
+      <button class="vlang-btn active" data-vlang="ja" onclick="setVoiceLang('ja')">🇯🇵 日文</button>
+      <button class="vlang-btn" data-vlang="en" onclick="setVoiceLang('en')">🇺🇸 英文</button>
+    </div>
+    <div class="input-row">
+      <textarea class="text-input" id="text-input"
+                placeholder="例：等一下等一下、你在幹嘛啦、我超累的…"
+                rows="2"
+                oninput="autoResize(this)"
+                onkeydown="handleKeydown(event)"></textarea>
+      <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="語音輸入（中文）">🎤</button>
+    </div>
+    <div class="voice-hint" id="voice-hint">🔴 錄音中，說完後請再按一次麥克風</div>
+    <button class="generate-btn" id="generate-btn" onclick="handleGenerate()">
+      ✨ 生成翻譯 + 例句
+    </button>
+  </div>
+
+  <!-- Results -->
+  <div id="results"></div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden form + iframe for CORS-free Google sync -->
+<iframe name="gsync-iframe" style="display:none" aria-hidden="true"></iframe>
+<form id="gsync-form" method="POST" target="gsync-iframe" style="display:none" aria-hidden="true">
+  <input type="hidden" name="data" id="gsync-data">
+</form>
+
+<script>
+// ─────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────
+let apiKey = localStorage.getItem('oai_key') || '';
+let sentenceData = {};   // { id: { japanese, english, chinese } }
+let audioCache   = {};   // { cacheKey: { url, blob } }
+let currentAudio = null;
+let isRecording  = false;
+let recognition  = null;
+let currentMode  = 'zh2jpen';   // 'zh2jpen' or 'jpen2zh'
+let voiceLang    = 'ja';        // for reverse mode mic lang
+
+// Restore saved key
+if (apiKey) {
+  document.getElementById('api-key-input').value = apiKey;
+}
+
+// ─────────────────────────────────────────
+//  Mode Switch
+// ─────────────────────────────────────────
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  const label    = document.getElementById('input-label-text');
+  const textarea = document.getElementById('text-input');
+  const genBtn   = document.getElementById('generate-btn');
+  const vlRow    = document.getElementById('voice-lang-row');
+
+  if (mode === 'zh2jpen') {
+    label.textContent  = '📝 輸入想翻譯的中文文字或詞語';
+    textarea.placeholder = '例：等一下等一下、你在幹嘛啦、我超累的…';
+    genBtn.innerHTML   = '✨ 生成翻譯 + 例句';
+    vlRow.classList.remove('show');
+  } else {
+    label.textContent  = '📝 輸入日文或英文句子';
+    textarea.placeholder = '例：お疲れ様でした　/　I\'m totally exhausted…';
+    genBtn.innerHTML   = '🔍 翻譯成中文';
+    vlRow.classList.add('show');
+  }
+
+  document.getElementById('results').innerHTML = '';
+  textarea.value = '';
+  autoResize(textarea);
+}
+
+function setVoiceLang(lang) {
+  voiceLang = lang;
+  document.querySelectorAll('.vlang-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.vlang === lang);
+  });
+}
+
+function handleGenerate() {
+  if (currentMode === 'zh2jpen') generate();
+  else translateToZH();
+}
+
+// ─────────────────────────────────────────
+//  Settings
+// ─────────────────────────────────────────
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  p.classList.toggle('open');
+}
+
+function handleApiKeyInput(val) {
+  apiKey = val.trim();
+  try { localStorage.setItem('oai_key', apiKey); } catch(e) {}
+}
+
+// ─────────────────────────────────────────
+//  Input helpers
+// ─────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
+}
+
+// ─────────────────────────────────────────
+//  Voice Input (Web Speech API)
+// ─────────────────────────────────────────
+function toggleVoice() {
+  const hasAPI = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+  if (!hasAPI) { showToast('此瀏覽器不支援語音輸入，請使用 Chrome 或 Safari'); return; }
+
+  if (isRecording) {
+    recognition && recognition.stop();
+    return;
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = currentMode === 'zh2jpen' ? 'zh-TW'
+                   : voiceLang === 'en'        ? 'en-US'
+                   :                             'ja-JP';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    document.getElementById('voice-hint').classList.add('show');
+  };
+
+  recognition.onresult = (e) => {
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    const el = document.getElementById('text-input');
+    el.value = t;
+    autoResize(el);
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('voice-hint').classList.remove('show');
+  };
+
+  recognition.onerror = (e) => {
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('voice-hint').classList.remove('show');
+    const msgs = { 'no-speech': '未偵測到語音', 'not-allowed': '請允許麥克風權限', 'network': '網路錯誤' };
+    showToast('語音錯誤：' + (msgs[e.error] || e.error));
+  };
+
+  recognition.start();
+}
+
+// ─────────────────────────────────────────
+//  Generate Translation
+// ─────────────────────────────────────────
+async function generate() {
+  const text = document.getElementById('text-input').value.trim();
+  if (!text)   { showToast('請先輸入要翻譯的文字'); return; }
+  if (!apiKey) { showToast('請先設定 OpenAI API Key ⚙️'); document.getElementById('settings-panel').classList.add('open'); return; }
+
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.35);border-top-color:white;border-radius:50%;animation:spin 0.75s linear infinite;vertical-align:middle"></span>&nbsp; AI 生成中…';
+
+  document.getElementById('results').innerHTML = `
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>AI 正在生成翻譯與例句<br><small style="font-size:11px;color:#bbb">通常需要 3–6 秒</small></p>
+    </div>`;
+
+  sentenceData = {};
+  audioCache   = {};
+
+  const prompt = `你是一位精通中、日、英三語的語言老師，擅長呈現語言的不同使用層次。
+請將以下中文同時翻譯成「口語版」和「書面版」，讓學習者對照比較。
+輸入：「${text}」
+
+【口語版標準】日文：
+- 縮略形：してる、てる、じゃん、だよ、だよね、かな、けど、って
+- 感嘆詞：まじで？やば！そうそう！え～
+- 就是日本人在 LINE、居酒屋說話的樣子
+
+【書面版標準】日文：
+- 標準現代日文，丁寧語（〜です／ます體）
+- 適合寫信、報告、正式場合使用的語氣
+- 自然的書面表達，不要過於文言
+
+【口語版標準】英文：
+- 縮寫：I'm, it's, gonna, wanna, kinda
+- 輕鬆自然，朋友間對話的語氣
+
+【書面版標準】英文：
+- 完整單字，不縮寫
+- 適合寫 email、報告的正式語氣
+
+請以 JSON 格式回覆（只回覆 JSON，不要其他文字）：
+{
+  "japanese_casual": "口語日文翻譯",
+  "japanese_casual_ruby": "口語日文翻譯（漢字加標假名，格式：漢字[よみ]，例：日本語[にほんご]）",
+  "japanese_formal": "書面日文翻譯",
+  "japanese_formal_ruby": "書面日文翻譯（漢字加標假名，格式：漢字[よみ]）",
+  "english_casual": "口語英文翻譯",
+  "english_formal": "書面英文翻譯",
+  "examples": [
+    {
+      "chinese": "中文例句",
+      "japanese_casual": "口語日文",
+      "japanese_casual_ruby": "口語日文（漢字加標假名）",
+      "japanese_formal": "書面日文",
+      "japanese_formal_ruby": "書面日文（漢字加標假名）",
+      "english_casual": "口語英文",
+      "english_formal": "書面英文",
+      "note": "情境說明（8字內）"
+    }
+  ]
+}
+
+請提供 1 個最實用的例句情境（選擇最能幫助學習者理解用法的場景）。
+口語版和書面版要有明顯差異，讓學習者能清楚感受語氣的不同。
+japanese_casual_ruby 和 japanese_formal_ruby 欄位：請在所有漢字後方加上 [読み方]，純假名或英文字母不需標注。`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.75,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const msg = errData.error?.message || `HTTP 錯誤 ${res.status}`;
+      throw new Error(msg);
+    }
+
+    const data   = await res.json();
+    const result = JSON.parse(data.choices[0].message.content);
+
+    // Store sentence data (both casual + formal)
+    sentenceData['main'] = {
+      chinese:       text,
+      ja_casual:     result.japanese_casual      || '',
+      ja_casual_ruby:result.japanese_casual_ruby || '',
+      ja_formal:     result.japanese_formal      || '',
+      ja_formal_ruby:result.japanese_formal_ruby || '',
+      en_casual:     result.english_casual       || '',
+      en_formal:     result.english_formal       || ''
+    };
+    (result.examples || []).forEach((ex, i) => {
+      sentenceData[`ex${i}`] = {
+        chinese:        ex.chinese               || '',
+        ja_casual:      ex.japanese_casual       || '',
+        ja_casual_ruby: ex.japanese_casual_ruby  || '',
+        ja_formal:      ex.japanese_formal       || '',
+        ja_formal_ruby: ex.japanese_formal_ruby  || '',
+        en_casual:      ex.english_casual        || '',
+        en_formal:      ex.english_formal        || '',
+        note:           ex.note                  || ''
+      };
+    });
+
+    renderResults(result, text);
+
+    // Auto-sync to Google if configured
+    if (scriptUrl) {
+      syncToGoogle(result, text);
+    }
+
+  } catch (e) {
+    const errMsg = e.message.includes('API key') ? '❌ API Key 無效，請重新設定'
+                 : e.message.includes('429')      ? '⏳ 請求過於頻繁，請稍後再試'
+                 : e.message.includes('insufficient') ? '💳 API 額度不足，請至 OpenAI 充值'
+                 : '⚠️ ' + e.message;
+    document.getElementById('results').innerHTML = `
+      <div class="error-box">
+        <strong>${errMsg}</strong>
+        <span style="font-size:12px;color:#e57373">如需幫助，請確認：API Key 是否正確、帳號是否有餘額、網路是否正常連線</span>
+      </div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '✨ 生成翻譯 + 例句';
+}
+
+// ─────────────────────────────────────────
+//  Render Results
+// ─────────────────────────────────────────
+function renderResults(data, originalText) {
+  const main = sentenceData['main'];
+  const examplesHtml = (data.examples || []).map((_, i) => {
+    const d = sentenceData[`ex${i}`];
+    return `
+      <div class="example-item">
+        <div class="example-meta">
+          <span class="example-num">例句 ${i + 1}</span>
+          ${d.note ? `<span class="example-note">💡 ${escHtml(d.note)}</span>` : ''}
+        </div>
+        ${langBlock('ex' + i, d.chinese, d.ja_casual, d.ja_formal, d.en_casual, d.en_formal, true)}
+      </div>`;
+  }).join('');
+
+  const ankiItemsHtml = renderAnkiItems(data, originalText);
+
+  document.getElementById('results').innerHTML = `
+    <div class="result-block" id="gsync-block" style="display:none">
+      <div class="section-header">☁️ Google 自動同步</div>
+      <div class="gsync-card">
+        <div class="gsync-row" id="gsync-row">
+          <span class="gsync-badge syncing">⏳ 正在同步到 Google…</span>
+        </div>
+      </div>
+    </div>
+    <div class="result-block">
+      <div class="section-header">🗾 主要翻譯</div>
+      <div class="trans-card">
+        ${langBlock('main', originalText, main.ja_casual, main.ja_formal, main.en_casual, main.en_formal, false)}
+      </div>
+    </div>
+    <div class="result-block">
+      <div class="section-header">📚 例句應用</div>
+      <div class="examples-card">
+        ${examplesHtml}
+      </div>
+    </div>
+
+    <div class="result-block">
+      <div class="section-header">📦 匯出到 Anki</div>
+      <div class="anki-card">
+        <p class="anki-desc">選擇要製作成卡片的句子，下載後匯入 Anki。<br>正面：中文　｜　背面：日文 ＋ 英文</p>
+        <button class="anki-select-all" onclick="toggleAllAnki(true)">全選</button>　<button class="anki-select-all" onclick="toggleAllAnki(false)" style="color:#e57373;text-decoration:underline;">全不選</button>
+        <div class="anki-list">${ankiItemsHtml}</div>
+        <label class="anki-vocab-row">
+          <input type="checkbox" id="anki-vocab-check" checked>
+          <div>
+            <span class="vocab-label">🔑 同時生成重點單字卡</span>
+            <small>AI 自動從日文句子中抓取重要單字，附中文意思與例句（每張翻譯卡 2–3 個單字）</small>
+          </div>
+        </label>
+        <div class="anki-deck-row">
+          <label>📂 牌組名稱</label>
+          <input type="text" id="anki-deck" value="AI日英翻譯" placeholder="AI日英翻譯">
+        </div>
+        <button class="anki-export-btn" id="anki-export-btn" onclick="exportToAnki()">
+          📦 下載 Anki 匯入檔（.txt）
+        </button>
+        <button class="anki-how-toggle" onclick="toggleAnkiHow()">
+          ❓ 如何匯入 Anki？
+        </button>
+        <div class="anki-how-panel" id="anki-how-panel">
+          <ol>
+            <li>開啟電腦版 <strong>Anki</strong>，選擇上方選單「<strong>檔案 → 匯入</strong>」</li>
+            <li>選取剛下載的 <code>.txt</code> 檔案</li>
+            <li>確認設定：類型選 <code>Basic</code>、分隔符選 <code>Tab</code></li>
+            <li>欄位對應：欄位 1 → <code>Front</code>，欄位 2 → <code>Back</code></li>
+            <li>點擊「匯入」即完成！</li>
+          </ol>
+        </div>
+      </div>
+    </div>`;
+}
+
+function langBlock(id, chinese, jaCasual, jaFormal, enCasual, enFormal, small) {
+  const sc = small ? ' small' : '';
+  const d  = sentenceData[id] || {};
+  const jaCasualHtml = d.ja_casual_ruby ? rubyToHtml(d.ja_casual_ruby) : escHtml(jaCasual);
+  const jaFormalHtml = d.ja_formal_ruby ? rubyToHtml(d.ja_formal_ruby) : escHtml(jaFormal);
+  return `
+    <div class="lang-block">
+      <span class="lang-tag zh">🇹🇼 中文</span>
+      <p class="sentence-text${sc}">${escHtml(chinese)}</p>
+    </div>
+    <div class="lang-block">
+      <span class="lang-tag ja">🇯🇵 日文</span>
+      <div class="style-block">
+        <div class="style-header"><span class="style-badge casual">💬 口語</span></div>
+        <p class="style-sentence ja${sc}">${jaCasualHtml}</p>
+        <div class="audio-row">
+          <button class="audio-btn play-btn ja" data-id="${id}" data-lang="ja" data-style="casual" onclick="playTTS(this)">🔊 播放</button>
+          <button class="audio-btn dl-btn" data-id="${id}" data-lang="ja" data-style="casual" onclick="downloadTTS(this)" title="下載 MP3">⬇️</button>
+        </div>
+      </div>
+      <div class="style-divider"></div>
+      <div class="style-block">
+        <div class="style-header"><span class="style-badge formal">📝 書面</span></div>
+        <p class="style-sentence ja${sc}">${jaFormalHtml}</p>
+        <div class="audio-row">
+          <button class="audio-btn play-btn ja" data-id="${id}" data-lang="ja" data-style="formal" onclick="playTTS(this)">🔊 播放</button>
+          <button class="audio-btn dl-btn" data-id="${id}" data-lang="ja" data-style="formal" onclick="downloadTTS(this)" title="下載 MP3">⬇️</button>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="lang-block">
+      <span class="lang-tag en">🇺🇸 英文</span>
+      <div class="style-block">
+        <div class="style-header"><span class="style-badge casual">💬 口語</span></div>
+        <p class="style-sentence${sc}">${escHtml(enCasual)}</p>
+        <div class="audio-row">
+          <button class="audio-btn play-btn en" data-id="${id}" data-lang="en" data-style="casual" onclick="playTTS(this)">🔊 播放</button>
+          <button class="audio-btn dl-btn" data-id="${id}" data-lang="en" data-style="casual" onclick="downloadTTS(this)" title="下載 MP3">⬇️</button>
+        </div>
+      </div>
+      <div class="style-divider"></div>
+      <div class="style-block">
+        <div class="style-header"><span class="style-badge formal">📝 書面</span></div>
+        <p class="style-sentence${sc}">${escHtml(enFormal)}</p>
+        <div class="audio-row">
+          <button class="audio-btn play-btn en" data-id="${id}" data-lang="en" data-style="formal" onclick="playTTS(this)">🔊 播放</button>
+          <button class="audio-btn dl-btn" data-id="${id}" data-lang="en" data-style="formal" onclick="downloadTTS(this)" title="下載 MP3">⬇️</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────
+//  TTS (OpenAI)
+// ─────────────────────────────────────────
+async function fetchTTS(cacheKey, text, lang) {
+  if (audioCache[cacheKey]) return audioCache[cacheKey];
+
+  const voiceJa = document.getElementById('voice-ja')?.value || 'shimmer';
+  const voiceEn = document.getElementById('voice-en')?.value || 'echo';
+  const voice   = lang === 'ja' ? voiceJa : voiceEn;
+
+  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'tts-1',
+      input: text,
+      voice: voice,
+      response_format: 'mp3'
+    })
+  });
+
+  if (!res.ok) throw new Error('TTS 請求失敗：HTTP ' + res.status);
+
+  const blob = await res.blob();
+  const url  = URL.createObjectURL(blob);
+  audioCache[cacheKey] = { url, blob };
+  return audioCache[cacheKey];
+}
+
+function getSentenceText(d, lang, style) {
+  if (lang === 'ja') return style === 'casual' ? d.ja_casual : d.ja_formal;
+  return style === 'casual' ? d.en_casual : d.en_formal;
+}
+
+async function playTTS(btn) {
+  if (!apiKey) { showToast('請先設定 API Key ⚙️'); return; }
+  const id    = btn.dataset.id;
+  const lang  = btn.dataset.lang;
+  const style = btn.dataset.style || 'casual';
+  const d     = sentenceData[id];
+  if (!d) return;
+
+  const text     = getSentenceText(d, lang, style);
+  const cacheKey = `${id}_${lang}_${style}`;
+
+  // Stop previous audio
+  if (currentAudio) { currentAudio.pause(); currentAudio.onended = null; currentAudio = null; }
+  // Reset all play buttons
+  document.querySelectorAll('.play-btn').forEach(b => {
+    b.innerHTML = b.classList.contains('ja') ? '🔊 播放日文' : '🔊 播放英文';
+    b.disabled = false;
+  });
+
+  const origLabel = btn.innerHTML;
+  btn.innerHTML = '⏳ 載入中…';
+  btn.disabled  = true;
+
+  try {
+    const { url } = await fetchTTS(cacheKey, text, lang);
+    const audio   = new Audio(url);
+    currentAudio  = audio;
+    audio.play();
+    btn.innerHTML = '⏸ 播放中…';
+
+    audio.onended = () => {
+      btn.innerHTML = origLabel;
+      btn.disabled  = false;
+      currentAudio  = null;
+    };
+    audio.onerror = () => {
+      btn.innerHTML = origLabel;
+      btn.disabled  = false;
+      currentAudio  = null;
+      showToast('音訊播放錯誤');
+    };
+  } catch (e) {
+    showToast('TTS 錯誤：' + e.message);
+    btn.innerHTML = origLabel;
+    btn.disabled  = false;
+  }
+}
+
+async function downloadTTS(btn) {
+  if (!apiKey) { showToast('請先設定 API Key ⚙️'); return; }
+  const id    = btn.dataset.id;
+  const lang  = btn.dataset.lang;
+  const style = btn.dataset.style || 'casual';
+  const d     = sentenceData[id];
+  if (!d) return;
+
+  const text     = getSentenceText(d, lang, style);
+  const cacheKey = `${id}_${lang}_${style}`;
+  const styleLabel = style === 'casual' ? '口語' : '書面';
+  const label    = (lang === 'ja' ? '日文' : '英文') + '_' + styleLabel;
+
+  const orig  = btn.innerHTML;
+  btn.innerHTML = '⏳';
+  btn.disabled  = true;
+  showToast('⏳ 正在生成音檔…');
+
+  try {
+    const { blob } = await fetchTTS(cacheKey, text, lang);
+    const a = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `${label}_${id}_${Date.now()}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✅ ' + label + '音檔下載完成');
+  } catch (e) {
+    showToast('下載失敗：' + e.message);
+  }
+
+  btn.innerHTML = orig;
+  btn.disabled  = false;
+}
+
+// ─────────────────────────────────────────
+//  Utilities
+// ─────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Convert 漢字[かな] notation → <ruby>漢字<rt>かな</rt></ruby> HTML
+function rubyToHtml(text) {
+  if (!text) return '';
+  // Match CJK / kana characters immediately followed by [reading]
+  // Covers: CJK Unified (一-鿿), Ext-A (㐀-䶿), Hiragana, Katakana
+  const re = /([一-鿿㐀-䶿぀-ゟ゠-ヿ]+)\[([^\]]+)\]/g;
+  let result = '';
+  let lastIndex = 0;
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    result += escHtml(text.slice(lastIndex, match.index));
+    result += `<ruby>${escHtml(match[1])}<rt>${escHtml(match[2])}</rt></ruby>`;
+    lastIndex = match.index + match[0].length;
+  }
+  result += escHtml(text.slice(lastIndex));
+  return result;
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ─────────────────────────────────────────
+//  Google Sync
+// ─────────────────────────────────────────
+let scriptUrl  = localStorage.getItem('script_url') || '';
+let gSheetUrl  = localStorage.getItem('g_sheet_url') || '';
+let gFolderUrl = localStorage.getItem('g_folder_url') || '';
+
+if (scriptUrl) {
+  document.getElementById('script-url-input').value = scriptUrl;
+  updateSettingsConnected();
+}
+
+function handleScriptUrlInput(val) {
+  scriptUrl = val.trim();
+  try { localStorage.setItem('script_url', scriptUrl); } catch(e) {}
+  if (scriptUrl) pingScript();
+}
+
+function toggleSetupGuide() {
+  document.getElementById('setup-guide').classList.toggle('open');
+}
+
+// Ping the script to get sheet/folder URLs
+async function pingScript() {
+  try {
+    const res  = await fetch(scriptUrl, { method: 'GET' });
+    const data = await res.json();
+    if (data.ok) {
+      gSheetUrl  = data.sheetUrl  || '';
+      gFolderUrl = data.folderUrl || '';
+      try {
+        localStorage.setItem('g_sheet_url',  gSheetUrl);
+        localStorage.setItem('g_folder_url', gFolderUrl);
+      } catch(e) {}
+      updateSettingsConnected();
+    }
+  } catch(e) { /* silent fail on ping */ }
+}
+
+function updateSettingsConnected() {
+  if (!gSheetUrl && !gFolderUrl) return;
+  const el = document.getElementById('gsync-settings-status');
+  if (!el) return;
+  el.style.display = 'block';
+  if (gSheetUrl)  document.getElementById('settings-sheet-link').href  = gSheetUrl;
+  if (gFolderUrl) document.getElementById('settings-folder-link').href = gFolderUrl;
+}
+
+function syncToGoogle(result, originalText) {
+  const block = document.getElementById('gsync-block');
+  const row   = document.getElementById('gsync-row');
+  if (!block || !row) return;
+
+  block.style.display = 'block';
+  row.innerHTML = '<span class="gsync-badge syncing">⏳ 正在同步到 Google…</span>';
+
+  try {
+    const main = sentenceData['main'] || {};
+    const payload = {
+      chinese:         originalText,
+      japanese_casual: main.ja_casual || '',
+      japanese_formal: main.ja_formal || '',
+      english_casual:  main.en_casual || '',
+      english_formal:  main.en_formal || '',
+      examples: Object.keys(sentenceData)
+        .filter(k => k.startsWith('ex'))
+        .sort()
+        .map(k => {
+          const d = sentenceData[k];
+          return {
+            chinese:         d.chinese   || '',
+            japanese_casual: d.ja_casual || '',
+            japanese_formal: d.ja_formal || '',
+            english_casual:  d.en_casual || '',
+            english_formal:  d.en_formal || '',
+            note:            d.note      || ''
+          };
+        })
+    };
+
+    // ── 用表單提交（完全無 CORS 限制，本機檔案也能用）──
+    const form  = document.getElementById('gsync-form');
+    const input = document.getElementById('gsync-data');
+    form.action  = scriptUrl;
+    input.value  = JSON.stringify(payload);
+    form.submit();
+
+    // 樂觀顯示成功（表單提交無法讀回應，但資料確實會送到）
+    setTimeout(() => {
+      let html = '<span class="gsync-badge ok">✅ 已傳送到 Google</span>';
+      if (gSheetUrl)  html += `<a class="gsync-link" href="${gSheetUrl}"  target="_blank">📊 試算表</a>`;
+      if (gFolderUrl) html += `<a class="gsync-link" href="${gFolderUrl}" target="_blank">📁 Drive 資料夾</a>`;
+      if (!gSheetUrl && !gFolderUrl) {
+        html += `<span style="font-size:12px;color:#666;margin-left:8px">請至 Google Drive 確認「AI日英翻譯」資料夾</span>`;
+      }
+      row.innerHTML = html;
+    }, 1200);
+
+  } catch(e) {
+    row.innerHTML = `<span class="gsync-badge error">⚠️ 傳送失敗：${escHtml(e.message)}</span>`;
+  }
+}
+
+// ─────────────────────────────────────────
+//  Anki Export
+// ─────────────────────────────────────────
+function renderAnkiItems(data, originalText) {
+  const mainHtml = `
+    <label class="anki-item">
+      <input type="checkbox" id="anki-cb-main" checked>
+      <div class="anki-item-content">
+        <span class="anki-item-badge">主要翻譯</span>
+        <span class="anki-item-preview">${escHtml(originalText)}</span>
+      </div>
+    </label>`;
+
+  const exHtml = (data.examples || []).map((ex, i) => `
+    <label class="anki-item">
+      <input type="checkbox" id="anki-cb-ex${i}" checked>
+      <div class="anki-item-content">
+        <span class="anki-item-badge ex">例句 ${i + 1}${ex.note ? '・' + ex.note : ''}</span>
+        <span class="anki-item-preview">${escHtml(ex.chinese || sentenceData[`ex${i}`]?.chinese || '')}</span>
+      </div>
+    </label>`).join('');
+
+  return mainHtml + exHtml;
+}
+
+function toggleAllAnki(checked) {
+  document.querySelectorAll('.anki-list input[type="checkbox"]').forEach(cb => {
+    cb.checked = checked;
+  });
+}
+
+function toggleAnkiHow() {
+  const p = document.getElementById('anki-how-panel');
+  p.classList.toggle('open');
+}
+
+function buildAnkiBack(japanese, english) {
+  // Single-line HTML for Anki back field
+  const jaEsc = japanese.replace(/\t/g, ' ').replace(/\n/g, ' ');
+  const enEsc = english.replace(/\t/g, ' ').replace(/\n/g, ' ');
+  return [
+    '<div style="text-align:left;font-family:sans-serif;line-height:1.8;padding:4px">',
+    '<p style="color:#c62828;font-weight:700;font-size:0.85em;margin:0 0 2px;letter-spacing:0.5px">🇯🇵 日文</p>',
+    `<p style="font-size:1.15em;margin:0 0 10px">${jaEsc}</p>`,
+    '<hr style="border:none;border-top:1px solid #eee;margin:6px 0">',
+    '<p style="color:#1565c0;font-weight:700;font-size:0.85em;margin:0 0 2px;letter-spacing:0.5px">🇺🇸 英文</p>',
+    `<p style="font-size:1em;margin:0">${enEsc}</p>`,
+    '</div>'
+  ].join('');
+}
+
+// ─────────────────────────────────────────
+//  Vocabulary Extraction (GPT-4o)
+// ─────────────────────────────────────────
+async function extractVocabulary(sentences, lang) {
+  // sentences: [{ text, label }]
+  const sentenceList = sentences.map((s, i) => `${i + 1}. 【${s.label}】 ${s.text}`).join('\n');
+  const langLabel = lang === 'ja' ? '日文' : lang === 'en' ? '英文' : '日文或英文';
+
+  const prompt = `你是語言學習專家。請從以下 ${langLabel} 句子中，為每個句子挑出 2–3 個最值得學習者記憶的重點單字或片語。
+
+句子：
+${sentenceList}
+
+選字標準：
+- 優先選實用性高、頻繁出現在日常生活的詞彙
+- 避免太基礎（如「私」「I」）或太艱深罕見的詞
+- 慣用表達、固定搭配優先
+
+請以 JSON 格式回覆（只回覆 JSON，不要其他文字）：
+{
+  "vocabulary": [
+    {
+      "sentence_index": 1,
+      "word": "単語／phrase",
+      "reading": "よみかた（僅日文填寫，英文留空）",
+      "lang": "ja 或 en",
+      "meaning": "中文意思（簡潔有力）",
+      "example": "例句（使用同語言，自然口語）",
+      "example_zh": "例句的中文翻譯"
+    }
+  ]
+}`;
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.5,
+      response_format: { type: 'json_object' }
+    })
+  });
+  if (!res.ok) throw new Error('單字提取失敗 HTTP ' + res.status);
+  const data = await res.json();
+  return JSON.parse(data.choices[0].message.content).vocabulary || [];
+}
+
+function buildVocabAnkiCard(vocab) {
+  const langFlag = vocab.lang === 'ja' ? '🇯🇵' : '🇺🇸';
+  const front = vocab.reading
+    ? `${langFlag} ${vocab.word}（${vocab.reading}）`
+    : `${langFlag} ${vocab.word}`;
+
+  const ex     = (vocab.example    || '').replace(/\t/g,' ').replace(/\n/g,' ');
+  const exZh   = (vocab.example_zh || '').replace(/\t/g,' ').replace(/\n/g,' ');
+  const meaning = (vocab.meaning   || '').replace(/\t/g,' ');
+
+  const back = [
+    '<div style="text-align:left;font-family:sans-serif;line-height:1.9;padding:4px">',
+    '<p style="color:#4a7c59;font-weight:700;font-size:0.85em;margin:0 0 2px;letter-spacing:0.5px">🇹🇼 中文意思</p>',
+    `<p style="font-size:1.2em;font-weight:700;margin:0 0 10px">${meaning}</p>`,
+    '<hr style="border:none;border-top:1px solid #eee;margin:6px 0">',
+    '<p style="color:#888;font-weight:700;font-size:0.85em;margin:0 0 3px">💬 例句</p>',
+    `<p style="font-size:1em;margin:0 0 4px">${ex}</p>`,
+    `<p style="font-size:0.88em;color:#aaa;margin:0">${exZh}</p>`,
+    '</div>'
+  ].join('');
+
+  return `${front}\t${back}\tAI翻譯 單字`;
+}
+
+async function exportToAnki() {
+  const selected = [];
+
+  // Check main
+  if (document.getElementById('anki-cb-main')?.checked) {
+    const d = sentenceData['main'];
+    if (d) selected.push({ id: 'main', ...d });
+  }
+
+  // Check examples
+  for (let i = 0; i < 1; i++) {
+    const cb = document.getElementById(`anki-cb-ex${i}`);
+    if (cb?.checked) {
+      const d = sentenceData[`ex${i}`];
+      if (d) selected.push({ id: `ex${i}`, ...d, label: `例句${i+1}` });
+    }
+  }
+
+  if (selected.length === 0) {
+    showToast('請至少勾選一個句子');
+    return;
+  }
+
+  const deck = (document.getElementById('anki-deck')?.value.trim() || 'AI日英翻譯').replace(/\t/g, ' ');
+  const now  = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+
+  const lines = [
+    '#separator:Tab',
+    '#html:true',
+    `#deck:${deck}`,
+    '#notetype:Basic',
+    '#columns:Front\tBack\tTags',
+    ''  // blank line before data
+  ];
+
+  // Each sentence generates 2 cards: casual + formal
+  for (const card of selected) {
+    const front = card.chinese.replace(/\t/g, ' ').replace(/\n/g, ' ');
+    const backCasual = buildAnkiBack(card.ja_casual || '', card.en_casual || '');
+    lines.push(`${front}（口語）\t${backCasual}\tAI翻譯 口語`);
+    const backFormal = buildAnkiBack(card.ja_formal || '', card.en_formal || '');
+    lines.push(`${front}（書面）\t${backFormal}\tAI翻譯 書面`);
+  }
+
+  // ── 重點單字卡 ──
+  const includeVocab = document.getElementById('anki-vocab-check')?.checked;
+  const exportBtn    = document.getElementById('anki-export-btn');
+  let vocabCount = 0;
+
+  if (includeVocab && apiKey) {
+    const origLabel = exportBtn?.innerHTML;
+    if (exportBtn) { exportBtn.disabled = true; exportBtn.innerHTML = '⏳ AI 分析重點單字中…'; }
+    try {
+      const sentences = selected.map(card => ({
+        text:  card.ja_casual || card.ja_formal || '',
+        label: card.chinese   || card.id
+      }));
+      const vocabList = await extractVocabulary(sentences, 'ja');
+      lines.push('');  // blank line separator
+      lines.push('// ── 重點單字卡 ──');
+      for (const v of vocabList) {
+        lines.push(buildVocabAnkiCard(v));
+        vocabCount++;
+      }
+    } catch(e) {
+      showToast('⚠️ 單字提取失敗，仍匯出翻譯卡片');
+    }
+    if (exportBtn) { exportBtn.disabled = false; exportBtn.innerHTML = origLabel; }
+  }
+
+  const content = lines.join('\n');
+  const blob    = new Blob(['﻿' + content], { type: 'text/plain;charset=utf-8' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  a.download    = `Anki_日英翻譯_${dateStr}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const totalCards = selected.length * 2 + vocabCount;
+  showToast(`✅ 已匯出 ${totalCards} 張卡片（含 ${vocabCount} 個單字卡）`);
+}
+
+// ─────────────────────────────────────────
+//  Reverse Translation: 日/英 → 中文
+// ─────────────────────────────────────────
+async function translateToZH() {
+  const text = document.getElementById('text-input').value.trim();
+  if (!text)   { showToast('請先輸入日文或英文句子'); return; }
+  if (!apiKey) { showToast('請先設定 OpenAI API Key ⚙️'); document.getElementById('settings-panel').classList.add('open'); return; }
+
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.35);border-top-color:white;border-radius:50%;animation:spin 0.75s linear infinite;vertical-align:middle"></span>&nbsp; AI 翻譯中…';
+
+  document.getElementById('results').innerHTML = `
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>AI 正在翻譯成中文<br><small style="font-size:11px;color:#bbb">通常需要 5–8 秒</small></p>
+    </div>`;
+
+  sentenceData = {};
+  audioCache   = {};
+
+  const prompt = `你是一位精通中、日、英三語的語言老師。
+請分析以下句子，判斷它是日文還是英文，然後翻譯成自然的繁體中文。
+
+輸入：「${text}」
+
+請給出：
+1. 口語中文：像台灣人日常說話的方式（自然、口語化）
+2. 書面中文：適合寫作或正式場合的翻譯
+3. 語感說明：解釋這句話的語氣、情境或文化含義（20字內）
+4. 1個類似例句（同語言→中文，選最實用的場景）
+
+請以 JSON 格式回覆（只回覆 JSON，不要其他文字）：
+{
+  "detected_lang": "ja 或 en",
+  "original": "原文（整理後的版本）",
+  "original_ruby": "原文（若為日文，漢字加標假名，格式：漢字[よみ]；若為英文，此欄留空）",
+  "chinese_casual": "口語中文翻譯",
+  "chinese_formal": "書面中文翻譯",
+  "nuance": "語感／情境說明",
+  "examples": [
+    {
+      "original": "類似例句（同語言）",
+      "original_ruby": "例句（若為日文，漢字加標假名；英文留空）",
+      "chinese_casual": "口語中文",
+      "chinese_formal": "書面中文",
+      "note": "情境（8字內）"
+    }
+  ]
+}
+若為日文，original_ruby 欄位請在所有漢字後方加上 [読み方]，純假名或符號不需標注。`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `HTTP 錯誤 ${res.status}`);
+    }
+
+    const data   = await res.json();
+    const result = JSON.parse(data.choices[0].message.content);
+    const lang   = result.detected_lang || 'ja';
+
+    sentenceData['rev-main'] = {
+      original:       result.original       || text,
+      original_ruby:  result.original_ruby  || '',
+      chinese_casual: result.chinese_casual || '',
+      chinese_formal: result.chinese_formal || '',
+      detected_lang:  lang
+    };
+    (result.examples || []).forEach((ex, i) => {
+      sentenceData[`rev-ex${i}`] = {
+        original:       ex.original       || '',
+        original_ruby:  ex.original_ruby  || '',
+        chinese_casual: ex.chinese_casual || '',
+        chinese_formal: ex.chinese_formal || '',
+        note:           ex.note           || '',
+        detected_lang:  lang
+      };
+    });
+
+    renderReverseResults(result);
+
+  } catch (e) {
+    const errMsg = e.message.includes('API key') ? '❌ API Key 無效，請重新設定'
+                 : e.message.includes('429')      ? '⏳ 請求過於頻繁，請稍後再試'
+                 : '⚠️ ' + e.message;
+    document.getElementById('results').innerHTML = `
+      <div class="error-box">
+        <strong>${errMsg}</strong>
+        <span style="font-size:12px;color:#e57373">如需幫助，請確認：API Key 是否正確、帳號是否有餘額</span>
+      </div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 翻譯成中文';
+}
+
+function renderReverseResults(data) {
+  const main     = sentenceData['rev-main'];
+  const lang     = main.detected_lang || 'ja';
+  const langFlag = lang === 'ja' ? '🇯🇵' : '🇺🇸';
+  const langName = lang === 'ja' ? '日文' : '英文';
+
+  const examplesHtml = (data.examples || []).map((_, i) => {
+    const d = sentenceData[`rev-ex${i}`];
+    if (!d) return '';
+    return `
+      <div class="example-item">
+        <div class="example-meta">
+          <span class="example-num">例句 ${i + 1}</span>
+          ${d.note ? `<span class="example-note">💡 ${escHtml(d.note)}</span>` : ''}
+        </div>
+        ${reverseBlock('rev-ex' + i, d.original, d.chinese_casual, d.chinese_formal, lang, true)}
+      </div>`;
+  }).join('');
+
+  const ankiItemsHtml = renderAnkiItemsReverse(data, langFlag);
+
+  document.getElementById('results').innerHTML = `
+    <div class="result-block" id="gsync-block" style="display:none">
+      <div class="section-header">☁️ Google 自動同步</div>
+      <div class="gsync-card">
+        <div class="gsync-row" id="gsync-row">
+          <span class="gsync-badge syncing">⏳ 正在同步到 Google…</span>
+        </div>
+      </div>
+    </div>
+    <div class="result-block">
+      <div class="section-header">${langFlag} ${langName} → 🇹🇼 中文翻譯</div>
+      <div class="trans-card">
+        ${reverseBlock('rev-main', main.original, main.chinese_casual, main.chinese_formal, lang, false)}
+        ${data.nuance ? `<div class="nuance-box"><strong>💡 語感：</strong>${escHtml(data.nuance)}</div>` : ''}
+      </div>
+    </div>
+    ${examplesHtml.trim() ? `
+    <div class="result-block">
+      <div class="section-header">📚 類似例句</div>
+      <div class="examples-card">
+        ${examplesHtml}
+      </div>
+    </div>` : ''}
+    <div class="result-block">
+      <div class="section-header">📦 匯出到 Anki</div>
+      <div class="anki-card">
+        <p class="anki-desc">選擇要製作成卡片的句子，下載後匯入 Anki。<br>正面：${langName}原文　｜　背面：中文（口語＋書面）</p>
+        <button class="anki-select-all" onclick="toggleAllAnkiRev(true)">全選</button>　<button class="anki-select-all" onclick="toggleAllAnkiRev(false)" style="color:#e57373;text-decoration:underline;">全不選</button>
+        <div class="anki-list" id="anki-rev-list">${ankiItemsHtml}</div>
+        <label class="anki-vocab-row">
+          <input type="checkbox" id="anki-rev-vocab-check" checked>
+          <div>
+            <span class="vocab-label">🔑 同時生成重點單字卡</span>
+            <small>AI 自動從原文句子中抓取重要單字，附中文意思與例句（每張翻譯卡 2–3 個單字）</small>
+          </div>
+        </label>
+        <div class="anki-deck-row">
+          <label>📂 牌組名稱</label>
+          <input type="text" id="anki-rev-deck" value="AI中文翻譯" placeholder="AI中文翻譯">
+        </div>
+        <button class="anki-export-btn" id="anki-rev-export-btn" onclick="exportAnkiReverse()">
+          📦 下載 Anki 匯入檔（.txt）
+        </button>
+      </div>
+    </div>`;
+
+  if (scriptUrl) syncReverseToGoogle(data);
+}
+
+function reverseBlock(id, original, zhCasual, zhFormal, lang, small) {
+  const sc        = small ? ' small' : '';
+  const langClass = lang === 'ja' ? 'ja' : 'en';
+  const langTag   = lang === 'ja' ? '🇯🇵 日文' : '🇺🇸 英文';
+  const tagClass  = lang === 'ja' ? 'ja' : 'en';
+  const d         = sentenceData[id] || {};
+  const origHtml  = (lang === 'ja' && d.original_ruby) ? rubyToHtml(d.original_ruby) : escHtml(original);
+
+  return `
+    <div class="lang-block">
+      <span class="lang-tag ${tagClass}">${langTag}</span>
+      <p class="sentence-text ${langClass}${sc}">${origHtml}</p>
+      <div class="audio-row">
+        <button class="audio-btn play-btn ${langClass}" data-id="${id}" data-lang="${lang}" data-style="original" onclick="playRevTTS(this)">🔊 播放</button>
+        <button class="audio-btn dl-btn" data-id="${id}" data-lang="${lang}" data-style="original" onclick="downloadRevTTS(this)" title="下載 MP3">⬇️</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="lang-block">
+      <span class="lang-tag zh">🇹🇼 中文</span>
+      <div class="style-block">
+        <div class="style-header"><span class="style-badge casual">💬 口語</span></div>
+        <p class="style-sentence${sc}">${escHtml(zhCasual)}</p>
+      </div>
+      <div class="style-divider"></div>
+      <div class="style-block">
+        <div class="style-header"><span class="style-badge formal">📝 書面</span></div>
+        <p class="style-sentence${sc}">${escHtml(zhFormal)}</p>
+      </div>
+    </div>`;
+}
+
+async function playRevTTS(btn) {
+  if (!apiKey) { showToast('請先設定 API Key ⚙️'); return; }
+  const id   = btn.dataset.id;
+  const lang = btn.dataset.lang;
+  const d    = sentenceData[id];
+  if (!d) return;
+
+  const text     = d.original || '';
+  const cacheKey = `${id}_${lang}_original`;
+
+  if (currentAudio) { currentAudio.pause(); currentAudio.onended = null; currentAudio = null; }
+  document.querySelectorAll('.play-btn').forEach(b => { b.innerHTML = '🔊 播放'; b.disabled = false; });
+
+  const origLabel = btn.innerHTML;
+  btn.innerHTML = '⏳ 載入中…';
+  btn.disabled  = true;
+
+  try {
+    const { url } = await fetchTTS(cacheKey, text, lang);
+    const audio   = new Audio(url);
+    currentAudio  = audio;
+    audio.play();
+    btn.innerHTML = '⏸ 播放中…';
+    audio.onended = () => { btn.innerHTML = origLabel; btn.disabled = false; currentAudio = null; };
+    audio.onerror = () => { btn.innerHTML = origLabel; btn.disabled = false; currentAudio = null; showToast('音訊播放錯誤'); };
+  } catch (e) {
+    showToast('TTS 錯誤：' + e.message);
+    btn.innerHTML = origLabel;
+    btn.disabled  = false;
+  }
+}
+
+async function downloadRevTTS(btn) {
+  if (!apiKey) { showToast('請先設定 API Key ⚙️'); return; }
+  const id   = btn.dataset.id;
+  const lang = btn.dataset.lang;
+  const d    = sentenceData[id];
+  if (!d) return;
+
+  const text     = d.original || '';
+  const cacheKey = `${id}_${lang}_original`;
+  const label    = lang === 'ja' ? '日文' : '英文';
+
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳';
+  btn.disabled  = true;
+  showToast('⏳ 正在生成音檔…');
+
+  try {
+    const { blob } = await fetchTTS(cacheKey, text, lang);
+    const a = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `${label}_${id}_${Date.now()}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✅ ' + label + '音檔下載完成');
+  } catch (e) {
+    showToast('下載失敗：' + e.message);
+  }
+
+  btn.innerHTML = orig;
+  btn.disabled  = false;
+}
+
+// ─────────────────────────────────────────
+//  Reverse Anki Export
+// ─────────────────────────────────────────
+function renderAnkiItemsReverse(data, langFlag) {
+  const main = sentenceData['rev-main'];
+  const mainHtml = `
+    <label class="anki-item">
+      <input type="checkbox" id="anki-rev-cb-main" checked>
+      <div class="anki-item-content">
+        <span class="anki-item-badge">${langFlag} 主要翻譯</span>
+        <span class="anki-item-preview">${escHtml(main.original)}</span>
+      </div>
+    </label>`;
+
+  const exHtml = (data.examples || []).map((_, i) => {
+    const d = sentenceData[`rev-ex${i}`];
+    if (!d) return '';
+    return `
+      <label class="anki-item">
+        <input type="checkbox" id="anki-rev-cb-ex${i}" checked>
+        <div class="anki-item-content">
+          <span class="anki-item-badge ex">例句 ${i + 1}${d.note ? '・' + d.note : ''}</span>
+          <span class="anki-item-preview">${escHtml(d.original)}</span>
+        </div>
+      </label>`;
+  }).join('');
+
+  return mainHtml + exHtml;
+}
+
+function toggleAllAnkiRev(checked) {
+  document.querySelectorAll('#anki-rev-list input[type="checkbox"]').forEach(cb => {
+    cb.checked = checked;
+  });
+}
+
+function buildRevAnkiBack(zhCasual, zhFormal) {
+  const casual = (zhCasual || '').replace(/\t/g, ' ').replace(/\n/g, ' ');
+  const formal = (zhFormal || '').replace(/\t/g, ' ').replace(/\n/g, ' ');
+  return [
+    '<div style="text-align:left;font-family:sans-serif;line-height:1.8;padding:4px">',
+    '<p style="color:#7c3aed;font-weight:700;font-size:0.85em;margin:0 0 2px;letter-spacing:0.5px">🇹🇼 中文（口語）</p>',
+    `<p style="font-size:1.15em;margin:0 0 10px">${casual}</p>`,
+    '<hr style="border:none;border-top:1px solid #eee;margin:6px 0">',
+    '<p style="color:#555;font-weight:700;font-size:0.85em;margin:0 0 2px;letter-spacing:0.5px">📝 中文（書面）</p>',
+    `<p style="font-size:1em;margin:0">${formal}</p>`,
+    '</div>'
+  ].join('');
+}
+
+async function exportAnkiReverse() {
+  const selected = [];
+  if (document.getElementById('anki-rev-cb-main')?.checked) {
+    const d = sentenceData['rev-main'];
+    if (d) selected.push({ ...d });
+  }
+  for (let i = 0; i < 1; i++) {
+    const cb = document.getElementById(`anki-rev-cb-ex${i}`);
+    if (cb?.checked) {
+      const d = sentenceData[`rev-ex${i}`];
+      if (d) selected.push({ ...d });
+    }
+  }
+  if (selected.length === 0) { showToast('請至少勾選一個句子'); return; }
+
+  const deck     = (document.getElementById('anki-rev-deck')?.value.trim() || 'AI中文翻譯').replace(/\t/g, ' ');
+  const now      = new Date();
+  const dateStr  = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const lang     = selected[0].detected_lang || 'ja';
+  const langName = lang === 'ja' ? '日文' : '英文';
+
+  const lines = [
+    '#separator:Tab',
+    '#html:true',
+    `#deck:${deck}`,
+    '#notetype:Basic',
+    '#columns:Front\tBack\tTags',
+    ''
+  ];
+
+  for (const card of selected) {
+    const front = (card.original || '').replace(/\t/g, ' ').replace(/\n/g, ' ');
+    const back  = buildRevAnkiBack(card.chinese_casual || '', card.chinese_formal || '');
+    lines.push(`${front}\t${back}\tAI翻譯 中文`);
+  }
+
+  // ── 重點單字卡 ──
+  const includeVocab = document.getElementById('anki-rev-vocab-check')?.checked;
+  const exportBtn    = document.getElementById('anki-rev-export-btn');
+  let vocabCount = 0;
+
+  if (includeVocab && apiKey) {
+    const origLabel = exportBtn?.innerHTML;
+    if (exportBtn) { exportBtn.disabled = true; exportBtn.innerHTML = '⏳ AI 分析重點單字中…'; }
+    try {
+      const sentences = selected.map(card => ({
+        text:  card.original || '',
+        label: card.original?.substring(0, 12) || '句子'
+      }));
+      const vocabList = await extractVocabulary(sentences, lang);
+      lines.push('');
+      lines.push('// ── 重點單字卡 ──');
+      for (const v of vocabList) {
+        lines.push(buildVocabAnkiCard(v));
+        vocabCount++;
+      }
+    } catch(e) {
+      showToast('⚠️ 單字提取失敗，仍匯出翻譯卡片');
+    }
+    if (exportBtn) { exportBtn.disabled = false; exportBtn.innerHTML = origLabel; }
+  }
+
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Anki_${langName}轉中文_${dateStr}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const totalCards = selected.length + vocabCount;
+  showToast(`✅ 已匯出 ${totalCards} 張卡片（含 ${vocabCount} 個單字卡）`);
+}
+
+// ─────────────────────────────────────────
+//  Reverse Google Sync
+// ─────────────────────────────────────────
+function syncReverseToGoogle(data) {
+  const block = document.getElementById('gsync-block');
+  const row   = document.getElementById('gsync-row');
+  if (!block || !row) return;
+
+  block.style.display = 'block';
+  row.innerHTML = '<span class="gsync-badge syncing">⏳ 正在同步到 Google…</span>';
+
+  try {
+    const main = sentenceData['rev-main'] || {};
+    const payload = {
+      type:           'reverse',
+      original:       main.original       || '',
+      detected_lang:  main.detected_lang  || 'ja',
+      chinese_casual: main.chinese_casual || '',
+      chinese_formal: main.chinese_formal || '',
+      nuance:         data.nuance         || '',
+      examples: Object.keys(sentenceData)
+        .filter(k => k.startsWith('rev-ex'))
+        .sort()
+        .map(k => {
+          const d = sentenceData[k];
+          return {
+            original:       d.original       || '',
+            chinese_casual: d.chinese_casual || '',
+            chinese_formal: d.chinese_formal || '',
+            note:           d.note           || ''
+          };
+        })
+    };
+
+    const form  = document.getElementById('gsync-form');
+    const input = document.getElementById('gsync-data');
+    form.action = scriptUrl;
+    input.value = JSON.stringify(payload);
+    form.submit();
+
+    setTimeout(() => {
+      let html = '<span class="gsync-badge ok">✅ 已傳送到 Google</span>';
+      if (gSheetUrl)  html += `<a class="gsync-link" href="${gSheetUrl}"  target="_blank">📊 試算表</a>`;
+      if (gFolderUrl) html += `<a class="gsync-link" href="${gFolderUrl}" target="_blank">📁 Drive 資料夾</a>`;
+      if (!gSheetUrl && !gFolderUrl) {
+        html += `<span style="font-size:12px;color:#666;margin-left:8px">請至 Google Drive 確認「AI日英翻譯」資料夾</span>`;
+      }
+      row.innerHTML = html;
+    }, 1200);
+
+  } catch(e) {
+    row.innerHTML = `<span class="gsync-badge error">⚠️ 傳送失敗：${escHtml(e.message)}</span>`;
+  }
+}
+</script>
+</body>
+</html>

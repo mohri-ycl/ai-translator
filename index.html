@@ -796,7 +796,7 @@
     </div>
     <div class="input-row">
       <textarea class="text-input" id="text-input"
-                placeholder="例：等一下等一下、你在幹嘛啦、我超累的…"
+                placeholder="例：今天天氣真好、你最近過得怎樣、謝謝你一直支持我…"
                 rows="2"
                 oninput="autoResize(this)"
                 onkeydown="handleKeydown(event)"></textarea>
@@ -856,7 +856,7 @@ function switchMode(mode) {
 
   if (mode === 'zh2jpen') {
     label.textContent  = '📝 輸入想翻譯的中文文字或詞語';
-    textarea.placeholder = '例：等一下等一下、你在幹嘛啦、我超累的…';
+    textarea.placeholder = '例：今天天氣真好、你最近過得怎樣、謝謝你一直支持我…';
     genBtn.innerHTML   = '✨ 生成翻譯 + 例句';
     vlRow.classList.remove('show');
   } else {
